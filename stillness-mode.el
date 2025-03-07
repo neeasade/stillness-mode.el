@@ -48,7 +48,8 @@ If set to nil, will infer from supported modes."
 (defun stillness-mode--handle-point (read-fn &rest args)
   "Move the point and windows for a still READ-FN invocation with ARGS."
   (let ((minibuffer-count (stillness-mode--minibuffer-height))
-         (minibuffer-offset stillness-mode-minibuffer-point-offset))
+         (minibuffer-offset stillness-mode-minibuffer-point-offset)
+         (original-buffer (current-buffer)))
     (if (or (> (minibuffer-depth) 0)
           (> minibuffer-count (frame-height))) ; pebkac: should we message if this is the case?
       (apply read-fn args)
@@ -80,7 +81,7 @@ If set to nil, will infer from supported modes."
           ;; tell windows to preserve themselves if they have a southern neighbor
           (-let* ((windows (--filter (window-in-direction 'below it) (window-list)))
                    (_ (--each windows (window-preserve-size it nil t)))
-                   (result (apply read-fn args)))
+                   (result (with-current-buffer original-buffer (apply read-fn args))))
             ;; and then release those preservations
             (--each windows (window-preserve-size it nil nil))
             result))))))

@@ -49,6 +49,7 @@ If set to nil, will infer from supported modes."
   "Move the point and windows for a still READ-FN invocation with ARGS."
   (let ((minibuffer-count (stillness-mode--minibuffer-height))
          (minibuffer-offset stillness-mode-minibuffer-point-offset)
+         (scroll-margin 0)
          (original-buffer (current-buffer)))
     (if (or (> (minibuffer-depth) 0)
           (> minibuffer-count (frame-height))) ; pebkac: should we message if this is the case?

@@ -15,9 +15,9 @@ with straight.el:
 with [[https://git.savannah.gnu.org/cgit/emacs.git/commit/?id=2ce279680bf9c1964e98e2aa48a03d6675c386fe][vc-use-package]] (emacs 30)
 
 #+begin_src emacs-lisp
-(use-package stillness
+(use-package stillness-mode
   :demand t
-  :vc (:url "https://github.com/neeasade/stillness-mode.el" :branch "main"))
+  :vc (:url "https://github.com/neeasade/stillness-mode.el" :rev :newest))
 #+end_src
 
 *Features*:

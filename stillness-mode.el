@@ -95,9 +95,20 @@ If set to nil, will infer from supported modes."
   (if stillness-mode
     (progn
       (advice-add 'completing-read :around #'stillness-mode--handle-point '(depth 90))
-      (advice-add 'completing-read-multiple :around #'stillness-mode--handle-point '(depth 90)))
+      (advice-add 'completing-read-multiple :around #'stillness-mode--handle-point '(depth 90))
+      ;; these c functions call completing read internally so they need advice too
+      (advice-add 'read-command :around #'stillness-mode--handle-point '(depth 90))
+      (advice-add 'read-variable :around #'stillness-mode--handle-point '(depth 90))
+      (advice-add 'read-buffer :around #'stillness-mode--handle-point '(depth 90))
+      (advice-add 'read-coding-system :around #'stillness-mode--handle-point '(depth 90))
+      (advice-add 'read-non-nil-coding-system :around #'stillness-mode--handle-point '(depth 90)))
     (advice-remove 'completing-read #'stillness-mode--handle-point)
-    (advice-remove 'completing-read-multiple #'stillness-mode--handle-point)))
+    (advice-remove 'completing-read-multiple #'stillness-mode--handle-point)
+    (advice-remove 'read-command #'stillness-mode--handle-point)
+    (advice-remove 'read-variable #'stillness-mode--handle-point)
+    (advice-remove 'read-buffer #'stillness-mode--handle-point)
+    (advice-remove 'read-coding-system #'stillness-mode--handle-point)
+    (advice-remove 'read-non-nil-coding-system #'stillness-mode--handle-point)))
 
 (provide 'stillness-mode)
 ;;; stillness-mode.el ends here

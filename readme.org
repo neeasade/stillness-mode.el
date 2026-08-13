@@ -24,6 +24,7 @@ with [[https://git.savannah.gnu.org/cgit/emacs.git/commit/?id=2ce279680bf9c1964e
 
 - works with horizontally stacked windows
 - accounts for windows below the expected minibuffer height
+- accounts for wrapped lines
 - keep your region up if it would be visible
 
 *Customization*
@@ -34,7 +35,7 @@ height by setting ~stillness-mode-minibuffer-height~
 *Caveats*:
 
 - if you depend on the point /during/ a completing read, this breaks you (eg [[https://github.com/oantolin/embark][embark]])
-- ~stillness-mode~ doesn't account for line wrapping.
+- ~stillness-mode~ doesn't account for mixed font height buffers.
 
 *See Also*:
 

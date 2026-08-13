@@ -45,10 +45,17 @@ If set to nil, will infer from supported modes."
     (and (bound-and-true-p ivy-mode) (symbol-value 'ivy-height))
     10))
 
+(defun stillness-mode--point-overlap-lines (window minibuffer-count)
+  "Return point's overlap with MINIBUFFER-COUNT screen lines in WINDOW."
+  (let* ((point-height (count-screen-lines (window-start window) (point) nil window))
+          (distance-from-bottom (- (window-body-height window) point-height))
+          (overlap (- minibuffer-count distance-from-bottom)))
+    (when (> overlap 0)
+      overlap)))
+
 (defun stillness-mode--handle-point (read-fn &rest args)
   "Move the point and windows for a still READ-FN invocation with ARGS."
-  (let ((minibuffer-count (stillness-mode--minibuffer-height))
-         (minibuffer-offset stillness-mode-minibuffer-point-offset)
+  (let ((minibuffer-count (stillness-mode--minibuffer-height)) (minibuffer-offset stillness-mode-minibuffer-point-offset)
          (scroll-margin 0)
          (original-buffer (current-buffer)))
     (if (or (> (minibuffer-depth) 0)
@@ -68,16 +75,9 @@ If set to nil, will infer from supported modes."
             (-each (--remove (window-in-direction 'below it) (window-list))
               (lambda (window)
                 (with-selected-window window
-                  (-let* (((_ top _ bottom) (window-edges))
-                           (local-height-ratio (/ (line-pixel-height) (float (frame-char-height))))
-                           (ratio (lambda (n) (round (* n local-height-ratio))))
-                           (bottom (funcall ratio bottom))
-                           (distance-from-bottom (- bottom top (funcall ratio (count-screen-lines (window-start) (point))))))
-                    (when (> (funcall ratio minibuffer-count) (- distance-from-bottom 2))
-                      (deactivate-mark)
-                      (line-move (- (+ (abs (- minibuffer-count distance-from-bottom))
-                                      minibuffer-offset))
-                        t nil nil)))))))
+                  (-when-let (overlap (stillness-mode--point-overlap-lines window minibuffer-count))
+                    (deactivate-mark)
+                    (vertical-motion (- (+ overlap minibuffer-offset)) window))))))
 
           ;; tell windows to preserve themselves if they have a southern neighbor
           (-let* ((windows (--filter (window-in-direction 'below it) (window-list)))

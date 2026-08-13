@@ -54,7 +54,7 @@ If set to nil, will infer from supported modes."
           )
     (when (> overlap 0)
       (deactivate-mark)
-      (vertical-motion (- (+ overlap minibuffer-offset)) window)))))
+      (vertical-motion (- (+ overlap minibuffer-offset)) window))))
 
 (defun stillness-mode--handle-point (read-fn &rest args)
   "Move the point and windows for a still READ-FN invocation with ARGS."

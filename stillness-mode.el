@@ -45,19 +45,24 @@ If set to nil, will infer from supported modes."
     (and (bound-and-true-p ivy-mode) (symbol-value 'ivy-height))
     10))
 
-(defun stillness-mode--point-overlap-lines (window minibuffer-count)
+(defun stillness-mode--adjust-point (window minibuffer-count)
   "Return point's overlap with MINIBUFFER-COUNT screen lines in WINDOW."
   (let* ((point-height (count-screen-lines (window-start window) (point) nil window))
           (distance-from-bottom (- (window-body-height window) point-height))
-          (overlap (- minibuffer-count distance-from-bottom)))
+          (overlap (- minibuffer-count distance-from-bottom))
+          ;; (mode (todo...)
+          )
     (when (> overlap 0)
-      overlap)))
+      (deactivate-mark)
+      (vertical-motion (- (+ overlap minibuffer-offset)) window)))))
 
 (defun stillness-mode--handle-point (read-fn &rest args)
   "Move the point and windows for a still READ-FN invocation with ARGS."
   (let ((minibuffer-count (stillness-mode--minibuffer-height)) (minibuffer-offset stillness-mode-minibuffer-point-offset)
          (scroll-margin 0)
-         (original-buffer (current-buffer)))
+         (original-buffer (current-buffer))
+         (state-restorations '())
+         )
     (if (or (> (minibuffer-depth) 0)
           (> minibuffer-count (frame-height))) ; pebkac: should we message if this is the case?
       (apply read-fn args)
@@ -69,15 +74,13 @@ If set to nil, will infer from supported modes."
                         (< (- (frame-height) (1+ (1+ top))) minibuffer-count)))
             (mapc #'delete-window)))
 
+        ;; move the point in any affected windows:
         (save-mark-and-excursion
           (ignore-errors
-            ;; move the point in any affected windows:
-            (-each (--remove (window-in-direction 'below it) (window-list))
-              (lambda (window)
-                (with-selected-window window
-                  (-when-let (overlap (stillness-mode--point-overlap-lines window minibuffer-count))
-                    (deactivate-mark)
-                    (vertical-motion (- (+ overlap minibuffer-offset)) window))))))
+            (setq state-restorations
+              (--keep (with-selected-window it
+                        (stillness-mode--adjust-point it minibuffer-count))
+                (--remove (window-in-direction 'below it) (window-list)))))
 
           ;; tell windows to preserve themselves if they have a southern neighbor
           (-let* ((windows (--filter (window-in-direction 'below it) (window-list)))

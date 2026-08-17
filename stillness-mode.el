@@ -45,16 +45,16 @@ If set to nil, will infer from supported modes."
     (and (bound-and-true-p ivy-mode) (symbol-value 'ivy-height))
     10))
 
-(defun stillness-mode--adjust-point (window minibuffer-count)
+(defun stillness-mode--adjust-point (window minibuffer-count minibuffer-offset)
   "Return point's overlap with MINIBUFFER-COUNT screen lines in WINDOW."
   (let* ((point-height (count-screen-lines (window-start window) (point) nil window))
           (distance-from-bottom (- (window-body-height window) point-height))
           (overlap (- minibuffer-count distance-from-bottom))
-          ;; (mode (todo...)
-          )
+          (mode (buffer-local-value 'major-mode (window-buffer window))))
     (when (> overlap 0)
       (deactivate-mark)
-      (vertical-motion (- (+ overlap minibuffer-offset)) window))))
+      (vertical-motion (- (+ (+ 2 overlap) minibuffer-offset)) window))
+    ))
 
 (defun stillness-mode--handle-point (read-fn &rest args)
   "Move the point and windows for a still READ-FN invocation with ARGS."
@@ -79,7 +79,7 @@ If set to nil, will infer from supported modes."
           (ignore-errors
             (setq state-restorations
               (--keep (with-selected-window it
-                        (stillness-mode--adjust-point it minibuffer-count))
+                        (stillness-mode--adjust-point it minibuffer-count minibuffer-offset))
                 (--remove (window-in-direction 'below it) (window-list)))))
 
           ;; tell windows to preserve themselves if they have a southern neighbor
@@ -88,6 +88,8 @@ If set to nil, will infer from supported modes."
                    (result (with-current-buffer original-buffer (apply read-fn args))))
             ;; and then release those preservations
             (--each windows (window-preserve-size it nil nil))
+            ;; (->> state-restorations
+            ;;   (-map (lambda (x) (message (ns/str x )))))
             result))))))
 
 ;;;###autoload

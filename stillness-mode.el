@@ -50,19 +50,30 @@ If set to nil, will infer from supported modes."
   (let* ((point-height (count-screen-lines (window-start window) (point) nil window))
           (distance-from-bottom (- (window-body-height window) point-height))
           (overlap (- minibuffer-count distance-from-bottom))
-          (mode (buffer-local-value 'major-mode (window-buffer window))))
+          (buffer (window-buffer window)))
+
     (when (> overlap 0)
       (deactivate-mark)
-      (vertical-motion (- (+ (+ 2 overlap) minibuffer-offset)) window))
-    ))
+      (vertical-motion (- (+ (+ 2 overlap) minibuffer-offset)) window)
+
+      (when (eq 'ghostel-mode (buffer-local-value 'major-mode buffer))
+        ;; coerce ghostel-mode
+        (let ((buffer (window-buffer window)))
+          (with-current-buffer buffer
+            (let ((kind ghostel--input-mode))
+              (unless (eq 'copy kind)
+                (ghostel-copy-mode))
+              (lambda ()
+                (with-current-buffer buffer
+                  (unless (eq 'copy kind)
+                    (funcall (intern (format "ghostel-%s-mode" kind)))))))))))))
 
 (defun stillness-mode--handle-point (read-fn &rest args)
   "Move the point and windows for a still READ-FN invocation with ARGS."
   (let ((minibuffer-count (stillness-mode--minibuffer-height)) (minibuffer-offset stillness-mode-minibuffer-point-offset)
          (scroll-margin 0)
          (original-buffer (current-buffer))
-         (state-restorations '())
-         )
+         (state-restorations '()))
     (if (or (> (minibuffer-depth) 0)
           (> minibuffer-count (frame-height))) ; pebkac: should we message if this is the case?
       (apply read-fn args)
@@ -85,12 +96,18 @@ If set to nil, will infer from supported modes."
           ;; tell windows to preserve themselves if they have a southern neighbor
           (-let* ((windows (--filter (window-in-direction 'below it) (window-list)))
                    (_ (--each windows (window-preserve-size it nil t)))
-                   (result (with-current-buffer original-buffer (apply read-fn args))))
+                   (did-quit nil)
+                   (result (with-current-buffer original-buffer
+                             (condition-case err
+                               (apply read-fn args)
+                               (quit ;; please hold.
+                                 (setq did-quit t))))))
             ;; and then release those preservations
             (--each windows (window-preserve-size it nil nil))
-            ;; (->> state-restorations
-            ;;   (-map (lambda (x) (message (ns/str x )))))
-            result))))))
+            (-map 'funcall state-restorations)
+            (if did-quit
+              (signal 'quit nil)
+              result)))))))
 
 ;;;###autoload
 (define-minor-mode stillness-mode

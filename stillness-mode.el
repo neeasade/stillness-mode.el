@@ -58,15 +58,14 @@ If set to nil, will infer from supported modes."
 
       (when (eq 'ghostel-mode (buffer-local-value 'major-mode buffer))
         ;; coerce ghostel-mode
-        (let ((buffer (window-buffer window)))
-          (with-current-buffer buffer
-            (let ((kind ghostel--input-mode))
-              (unless (eq 'copy kind)
-                (ghostel-copy-mode))
-              (lambda ()
-                (with-current-buffer buffer
-                  (unless (eq 'copy kind)
-                    (funcall (intern (format "ghostel-%s-mode" kind)))))))))))))
+        (with-current-buffer buffer
+          (let ((kind ghostel--input-mode))
+            (unless (eq 'copy kind)
+              (ghostel-copy-mode))
+            (lambda ()
+              (with-current-buffer buffer
+                (unless (eq 'copy kind)
+                  (funcall (intern (format "ghostel-%s-mode" kind))))))))))))
 
 (defun stillness-mode--handle-point (read-fn &rest args)
   "Move the point and windows for a still READ-FN invocation with ARGS."

@@ -50,8 +50,9 @@ If set to nil, will infer from supported modes."
   (let* ((point-height (count-screen-lines (window-start window) (point) nil window))
           (distance-from-bottom (- (window-body-height window) point-height))
           (overlap (- minibuffer-count distance-from-bottom))
+          (moving? (> overlap 0))
           (buffer (window-buffer window))
-          (restore (when (eq 'ghostel-mode (buffer-local-value 'major-mode buffer))
+          (restore (when (and moving? (eq 'ghostel-mode (buffer-local-value 'major-mode buffer)))
                      ;; coerce ghostel-mode
                      (with-current-buffer buffer
                        (let ((kind ghostel--input-mode))
@@ -62,10 +63,9 @@ If set to nil, will infer from supported modes."
                              (unless (eq 'copy kind)
                                (funcall (intern (format "ghostel-%s-mode" kind)))))))))))
 
-    (when (> overlap 0)
+    (when moving?
       (deactivate-mark)
       (vertical-motion (- (+ (+ 2 overlap) minibuffer-offset)) window)
-
       restore)))
 
 (defun stillness-mode--handle-point (read-fn &rest args)

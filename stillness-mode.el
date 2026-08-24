@@ -50,22 +50,23 @@ If set to nil, will infer from supported modes."
   (let* ((point-height (count-screen-lines (window-start window) (point) nil window))
           (distance-from-bottom (- (window-body-height window) point-height))
           (overlap (- minibuffer-count distance-from-bottom))
-          (buffer (window-buffer window)))
+          (buffer (window-buffer window))
+          (restore (when (eq 'ghostel-mode (buffer-local-value 'major-mode buffer))
+                     ;; coerce ghostel-mode
+                     (with-current-buffer buffer
+                       (let ((kind ghostel--input-mode))
+                         (unless (eq 'copy kind)
+                           (ghostel-copy-mode))
+                         (lambda ()
+                           (with-current-buffer buffer
+                             (unless (eq 'copy kind)
+                               (funcall (intern (format "ghostel-%s-mode" kind)))))))))))
 
     (when (> overlap 0)
       (deactivate-mark)
       (vertical-motion (- (+ (+ 2 overlap) minibuffer-offset)) window)
 
-      (when (eq 'ghostel-mode (buffer-local-value 'major-mode buffer))
-        ;; coerce ghostel-mode
-        (with-current-buffer buffer
-          (let ((kind ghostel--input-mode))
-            (unless (eq 'copy kind)
-              (ghostel-copy-mode))
-            (lambda ()
-              (with-current-buffer buffer
-                (unless (eq 'copy kind)
-                  (funcall (intern (format "ghostel-%s-mode" kind))))))))))))
+      restore)))
 
 (defun stillness-mode--handle-point (read-fn &rest args)
   "Move the point and windows for a still READ-FN invocation with ARGS."

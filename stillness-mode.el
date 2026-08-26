@@ -104,7 +104,7 @@ If set to nil, will infer from supported modes."
                                  (setq did-quit t))))))
             ;; and then release those preservations
             (--each windows (window-preserve-size it nil nil))
-            (-map 'funcall state-restorations)
+            (mapc 'funcall state-restorations)
             (if did-quit
               (signal 'quit nil)
               result)))))))
